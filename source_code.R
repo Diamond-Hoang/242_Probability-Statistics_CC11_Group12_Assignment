@@ -6,7 +6,7 @@ library(car)
 #Import
 raw_data <- read.csv("D:/XSTK/tourism_dataset_5000.csv")
 
-#summary
+#summaryvar
 head(raw_data)
 
 #creating data with main variables
@@ -116,37 +116,81 @@ pairs(numeric,col = "#6F8FAF", main = "PAIRPLOT")
 
 #normal check
 satisfaction <- main_data$Satisfaction
-# Set seed for r e p r o d u c i b i l i t y
+# Set seed for reproducibility
 set.seed(42)
-# Generate 10 ,000 sample means , each from a sample of size 30
-sample_means <- replicate (10000 , mean(sample(satisfaction, size = 30, replace = TRUE)))
+# Generate 10000 sample means , each from a sample of size 30
+sample_means_30 <- replicate (10000 , mean(sample(satisfaction, size = 30, replace = TRUE)))
 
-#histogram of satis to check normal
+#histogram of satisfaction to check normal
 # Convert to data frame for ggplot
-df <- data.frame(sample_means = sample_means)
+df <- data.frame(sample_means_30 = sample_means_30)
 
-ggplot(df, aes(x = sample_means)) +
+ggplot(df, aes(x = sample_means_30)) +
   geom_histogram(bins = 30, fill = "salmon", color = "black") +
   labs(title = "Sampling Distribution of Sample Mean (n=30)",
        x = "Sample Mean of Satisfaction",
        y = "Frequency") +
   theme_minimal()
 
+set.seed(42)
+# Generate 10000 sample means , each from a sample of size 1000
+sample_means_1000 <- replicate (10000 , mean(sample(satisfaction, size = 1000, replace = TRUE)))
+
+#histogram of satisfaction to check normal
+# Convert to data frame for ggplot
+df <- data.frame(sample_means_1000 = sample_means_1000)
+
+ggplot(df, aes(x = sample_means_1000)) +
+  geom_histogram(bins = 60, fill = "salmon", color = "black") +
+  labs(title = "Sampling Distribution of Sample Mean (n=1000)",
+       x = "Sample Mean of Satisfaction",
+       y = "Frequency") +
+  theme_minimal()
+
+set.seed(42)
+# Generate 10000 sample means , each from a sample of size 1000
+sample_means_5000 <- replicate (10000 , mean(sample(satisfaction, size = 5000, replace = TRUE)))
+
+#histogram of satisfaction to check normal
+# Convert to data frame for ggplot
+df <- data.frame(sample_means_5000 = sample_means_5000)
+
+ggplot(df, aes(x = sample_means_5000)) +
+  geom_histogram(bins = 120, fill = "salmon", color = "black") +
+  labs(title = "Sampling Distribution of Sample Mean (n=5000)",
+       x = "Sample Mean of Satisfaction",
+       y = "Frequency") +
+  theme_minimal()
+
 #normal qqplot
-qqnorm(sample_means)
-qqline(sample_means, col="red")
+qqnorm(sample_means_30)
+qqline(sample_means_30, col="red")
+
+qqnorm(sample_means_1000)
+qqline(sample_means_1000, col="red")
+
+qqnorm(sample_means_5000)
+qqline(sample_means_5000, col="red")
+
 
 # One-sample t-test (Satisfaction vs. 3.5)
 one_sample <- t.test(main_data$Satisfaction, mu = 3.5, alternative = "greater")
 print(one_sample)
-qt(p=0.05, df=5000-1, lower.tail=FALSE)
+#qt(p=0.05, df=5000-1, lower.tail=FALSE)
 
 # Two-sample t-test
-accessible <- subset(main_data, Accessibility == "True")$Satisfaction
-inaccessible <- subset(main_data, Accessibility == "False")$Satisfaction
-two_sample <- t.test(accessible, inaccessible, var.equal = TRUE)
+satisfaction_accessible <- subset(main_data, Accessibility == "True")$Satisfaction
+satisfaction_inaccessible <- subset(main_data, Accessibility == "False")$Satisfaction
+
+
+# Combine the satisfaction scores
+satisfaction_combined <- c(satisfaction_accessible, satisfaction_inaccessible)
+group <- factor(c(rep("Accessible", length(satisfaction_accessible)), rep("Inaccessible", length(satisfaction_inaccessible))))
+leveneTest(satisfaction_combined ~ group)
+
+two_sample <- t.test(satisfaction_accessible, satisfaction_inaccessible, var.equal = TRUE)
 print(two_sample)
-qt(p=0.05/2, df=5000-2, lower.tail=FALSE)
+#qt(p=0.05/2, df=5000-2, lower.tail=FALSE)
 
 # Create age group variable
 main_data <- main_data %>%
@@ -168,5 +212,8 @@ anova_result <- aov(Satisfaction ~ Age_Group, data = main_data)
 # View ANOVA results
 print(summary(anova_result))
 
-# Tukey
-print(TukeyHSD(anova_result))
+# Perform Kruskal-Wallis test
+kruskal_result <- kruskal.test(Satisfaction ~ Age_Group, data = main_data)
+
+# View Kruskal-Wallis test result
+print(kruskal_result)
