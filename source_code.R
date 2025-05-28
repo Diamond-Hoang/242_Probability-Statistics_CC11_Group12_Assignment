@@ -3,6 +3,10 @@ library(ggplot2)
 library(dplyr)
 library(stringr)
 library(car)
+library(corrplot)
+install.packages("BSDA")  
+library(BSDA)             
+
 
 raw_data <- read.csv("D:/XSTK/tourism_dataset_5000.csv")
 head(raw_data)
@@ -110,105 +114,42 @@ plot_boxplot <- function(df, x_col, y_col) {
 plot_boxplot(main_data, "Accessibility", "Satisfaction")
 plot_boxplot(main_data, "Site.Name", "Satisfaction")
 
-#pairplot
-pairs(numeric,col = "#6F8FAF", main = "PAIRPLOT")
+#Draw correlation chart
+correlation_matrix <- cor(numeric)
+# Draw correlation graph
+corrplot(correlation_matrix, method = "circle", 
+         type = "full", order = "hclust",
+         tl.col = "black", tl.srt = 45, 
+         diag = TRUE, 
+         addCoef.col = "black")
 
 #####################################Statistical Inference#####################################
-#normality
-satisfaction <- main_data$Satisfaction
 
-# Set seed for reproducibility
-set.seed(42)
-# Generate 10000 sample means , each from a sample of size 30
-sample_means_30 <- replicate (10000 , mean(sample(satisfaction, size = 30, replace = TRUE)))
-
-# Convert to data frame for ggplot
-df <- data.frame(sample_means_30 = sample_means_30)
-
-ggplot(df, aes(x = sample_means_30)) +
-  geom_histogram(bins = 30, fill = "salmon", color = "black") +
-  labs(title = "Sampling Distribution of Sample Mean (n=30)",
-       x = "Sample Mean of Satisfaction",
-       y = "Frequency") +
-  theme_minimal()
-
-set.seed(42)
-# Generate 10000 sample means , each from a sample of size 1000
-sample_means_1000 <- replicate (10000 , mean(sample(satisfaction, size = 1000, replace = TRUE)))
-
-# Convert to data frame for ggplot
-df <- data.frame(sample_means_1000 = sample_means_1000)
-
-ggplot(df, aes(x = sample_means_1000)) +
-  geom_histogram(bins = 60, fill = "salmon", color = "black") +
-  labs(title = "Sampling Distribution of Sample Mean (n=1000)",
-       x = "Sample Mean of Satisfaction",
-       y = "Frequency") +
-  theme_minimal()
-
-set.seed(42)
-# Generate 10000 sample means , each from a sample of size 1000
-sample_means_5000 <- replicate (10000 , mean(sample(satisfaction, size = 5000, replace = TRUE)))
-
-# Convert to data frame for ggplot
-df <- data.frame(sample_means_5000 = sample_means_5000)
-
-ggplot(df, aes(x = sample_means_5000)) +
-  geom_histogram(bins = 120, fill = "salmon", color = "black") +
-  labs(title = "Sampling Distribution of Sample Mean (n=5000)",
-       x = "Sample Mean of Satisfaction",
-       y = "Frequency") +
-  theme_minimal()
-
-#normal qqplot
-qqnorm(sample_means_30)
-qqline(sample_means_30, col="red")
-
-qqnorm(sample_means_1000)
-qqline(sample_means_1000, col="red")
-
-qqnorm(sample_means_5000)
-qqline(sample_means_5000, col="red")
-
-# One-sample t-test (Satisfaction vs. 3.5)
-one_sample <- t.test(main_data$Satisfaction, mu = 3.5, alternative = "greater")
+# One-sample z-test
+one_sample <- z.test(main_data$Satisfaction, mu = 3.5, sigma.x = sd(main_data$Satisfaction, na.rm = TRUE), alternative = "greater")
 print(one_sample)
-#qt(p=0.05, df=5000-1, lower.tail=FALSE)
 
-# Two-sample t-test
+# Two-sample z-test
 satisfaction_accessible <- subset(main_data, Accessibility == "True")$Satisfaction
 satisfaction_inaccessible <- subset(main_data, Accessibility == "False")$Satisfaction
-
-satisfaction_combined <- c(satisfaction_accessible, satisfaction_inaccessible)
-group <- factor(c(rep("Accessible", length(satisfaction_accessible)), rep("Inaccessible", length(satisfaction_inaccessible))))
-leveneTest(satisfaction_combined ~ group)
-
-two_sample <- t.test(satisfaction_accessible, satisfaction_inaccessible, var.equal = TRUE)
+two_sample <- z.test(satisfaction_accessible, satisfaction_inaccessible, sigma.x = sd(satisfaction_accessible, na.rm = TRUE), sigma.y = sd(satisfaction_inaccessible, na.rm = TRUE))
 print(two_sample)
-#qt(p=0.05/2, df=5000-2, lower.tail=FALSE)
 
-#ANOVA
-# Create age group variable
+
 main_data <- main_data %>%
-  mutate(Age_Group = case_when(
-    Age < 30 ~ " <30 ",
-    Age >= 30 & Age < 40 ~ " 30 to 39 ",
-    Age >= 40 & Age < 50 ~ " 40 to 49 ",
-    Age >= 50 & Age < 60 ~ " 50 to 59 ",
-    Age >= 60 ~ "60+ "
+  mutate(Tourist_Rating_Group = case_when(
+    Tourist.Rating >= 1 & Tourist.Rating < 2 ~ "Very Low",
+    Tourist.Rating >= 2 & Tourist.Rating < 3 ~ "Low",
+    Tourist.Rating >= 3 & Tourist.Rating < 4 ~ "Moderate",
+    Tourist.Rating >= 4 & Tourist.Rating <= 5 ~ "High"
   ))
-main_data$Age_Group <- as.factor(main_data$Age_Group)
 
-print(leveneTest(Satisfaction ~ Age_Group, data = main_data))
+# Convert to factor
+main_data$Tourist_Rating_Group <- as.factor(main_data$Tourist_Rating_Group)
 
-# Perform ANOVA test
-anova_result <- aov(Satisfaction ~ Age_Group, data = main_data)
+# Levene’s Test 
+print(leveneTest(Satisfaction ~ Tourist_Rating_Group, data = main_data))
 
-# View ANOVA results
-print(summary(anova_result))
-
-# Perform Kruskal-Wallis test
-kruskal_result <- kruskal.test(Satisfaction ~ Age_Group, data = main_data)
-
-# View Kruskal-Wallis test result
+# Kruskal-Wallis test (non-parametric alternative)
+kruskal_result <- kruskal.test(Satisfaction ~ Tourist_Rating_Group, data = main_data)
 print(kruskal_result)
