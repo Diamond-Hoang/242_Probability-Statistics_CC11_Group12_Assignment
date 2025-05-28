@@ -81,7 +81,7 @@ custom_summary <- function(x) {
   # Combine results from summary and standard deviation
   c(summary_stats, Std_Dev = std_dev)
 }
-stat <- lapply(main_data, custom_summary)
+stat <- lapply(numeric, custom_summary)
 
 # Print results
 print(stat)
