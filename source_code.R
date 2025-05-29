@@ -1,10 +1,16 @@
+if (!require("tidyr")) install.packages("tidyr")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("stringr")) install.packages("stringr")
+if (!require("car")) install.packages("car")
+if (!require("corrplot")) install.packages("corrplot")
+if (!require("BSDA")) install.packages("BSDA")
 library(tidyr)
 library(ggplot2)
 library(dplyr)
 library(stringr)
 library(car)
 library(corrplot)
-install.packages("BSDA")  
 library(BSDA)             
 
 
@@ -153,3 +159,4 @@ print(leveneTest(Satisfaction ~ Tourist_Rating_Group, data = main_data))
 # Kruskal-Wallis test (non-parametric alternative)
 kruskal_result <- kruskal.test(Satisfaction ~ Tourist_Rating_Group, data = main_data)
 print(kruskal_result)
+
